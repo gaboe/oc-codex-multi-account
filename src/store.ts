@@ -5,16 +5,14 @@ import * as crypto from 'node:crypto'
 import type {
   AccountStore,
   AccountCredentials,
-  RateLimitHistoryEntry,
-  RateLimitSnapshot,
   PluginConfig
 } from './types.js'
 
 const STORE_DIR_ENV = 'OPENCODE_MULTI_AUTH_STORE_DIR'
 const STORE_FILE_ENV = 'OPENCODE_MULTI_AUTH_STORE_FILE'
-const DEFAULT_STORE_DIR = path.join(os.homedir(), '.config', 'oc-codex-multi-account')
-const DEFAULT_STORE_FILE = 'accounts.json'
-const LEGACY_STORE_FILE = path.join(os.homedir(), '.config', 'opencode-multi-auth', 'accounts.json')
+const DEFAULT_STORE_DIR = path.join(os.homedir(), '.config', 'opencode')
+const DEFAULT_STORE_FILE = 'codex-multi-accounts.json'
+const LEGACY_STORE_FILE = path.join(os.homedir(), '.config', 'oc-codex-multi-account', 'accounts.json')
 
 function getStoreDir(): string {
   const override = process.env[STORE_DIR_ENV]
@@ -115,49 +113,6 @@ function decryptStore(file: EncryptedStoreFile, passphrase: string): AccountStor
   decipher.setAuthTag(tag)
   const decrypted = Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8')
   return JSON.parse(decrypted) as AccountStore
-}
-
-function buildSnapshot(window?: { remaining?: number; limit?: number; resetAt?: number }): RateLimitSnapshot | undefined {
-  if (!window) return undefined
-  return {
-    remaining: window.remaining,
-    limit: window.limit,
-    resetAt: window.resetAt
-  }
-}
-
-function buildHistoryEntry(rateLimits?: { fiveHour?: any; weekly?: any }): RateLimitHistoryEntry | null {
-  if (!rateLimits?.fiveHour && !rateLimits?.weekly) return null
-  const updatedAtValues = [rateLimits?.fiveHour?.updatedAt, rateLimits?.weekly?.updatedAt].filter(
-    (value): value is number => typeof value === 'number'
-  )
-  const at = updatedAtValues.length > 0 ? Math.max(...updatedAtValues) : Date.now()
-  return {
-    at,
-    fiveHour: buildSnapshot(rateLimits?.fiveHour),
-    weekly: buildSnapshot(rateLimits?.weekly)
-  }
-}
-
-function appendHistory(
-  history: RateLimitHistoryEntry[] | undefined,
-  entry: RateLimitHistoryEntry
-): RateLimitHistoryEntry[] {
-  const next = history ? [...history] : []
-  const last = next[next.length - 1]
-  const same =
-    last &&
-    last.fiveHour?.remaining === entry.fiveHour?.remaining &&
-    last.weekly?.remaining === entry.weekly?.remaining &&
-    last.fiveHour?.resetAt === entry.fiveHour?.resetAt &&
-    last.weekly?.resetAt === entry.weekly?.resetAt
-  if (!same) {
-    next.push(entry)
-  }
-  if (next.length > 160) {
-    return next.slice(next.length - 160)
-  }
-  return next
 }
 
 export function loadStore(): AccountStore {
@@ -288,12 +243,10 @@ export function getStoreDiagnostics(): {
 
 export function addAccount(alias: string, creds: Omit<AccountCredentials, 'alias' | 'usageCount'>): AccountStore {
   const store = loadStore()
-  const entry = buildHistoryEntry(creds.rateLimits)
   store.accounts[alias] = {
     ...creds,
     alias,
-    usageCount: 0,
-    rateLimitHistory: entry ? [entry] : creds.rateLimitHistory
+    usageCount: 0
   }
   if (!store.activeAlias) {
     store.activeAlias = alias
@@ -318,12 +271,6 @@ export function updateAccount(alias: string, updates: Partial<AccountCredentials
   if (store.accounts[alias]) {
     const current = store.accounts[alias]
     const next = { ...current, ...updates }
-    if (updates.rateLimits || next.rateLimits) {
-      const entry = buildHistoryEntry(next.rateLimits)
-      if (entry) {
-        next.rateLimitHistory = appendHistory(current.rateLimitHistory, entry)
-      }
-    }
     store.accounts[alias] = next
     saveStore(store)
   }
