@@ -88,8 +88,6 @@ function buildAlias(email, accountId, store) {
 }
 function findMatchingAlias(tokens, accountId, email, store) {
     for (const account of Object.values(store.accounts)) {
-        if (accountId && account.accountId === accountId)
-            return account.alias;
         if (account.accessToken === tokens.access_token)
             return account.alias;
         if (account.refreshToken === tokens.refresh_token)
@@ -97,6 +95,8 @@ function findMatchingAlias(tokens, accountId, email, store) {
         if (account.idToken === tokens.id_token)
             return account.alias;
         if (email && account.email === email)
+            return account.alias;
+        if (accountId && account.accountId === accountId && (!email || !account.email))
             return account.alias;
     }
     return null;

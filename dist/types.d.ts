@@ -57,6 +57,7 @@ export interface AccountStore {
     activeAlias: string | null;
     rotationIndex: number;
     lastRotation: number;
+    lastPrimaryCheck?: number;
 }
 export interface OpenAIModel {
     id: string;
@@ -65,11 +66,14 @@ export interface OpenAIModel {
     owned_by: string;
 }
 export interface PluginConfig {
-    rotationStrategy: 'round-robin' | 'least-used' | 'random';
+    rotationStrategy: 'sticky-threshold' | 'round-robin' | 'least-used' | 'random';
     autoRefreshTokens: boolean;
     rateLimitCooldownMs: number;
     modelUnsupportedCooldownMs: number;
     workspaceDeactivatedCooldownMs: number;
+    stickyThresholdFiveHour: number;
+    stickyThresholdWeekly: number;
+    stickyRecoveryCheckIntervalMs: number;
     modelFilter: RegExp;
 }
 export interface ProviderModel {

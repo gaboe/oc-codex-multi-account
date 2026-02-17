@@ -1,16 +1,20 @@
 {
-  "name": "@guard22/opencode-multi-auth-codex",
-  "version": "1.0.10",
-  "description": "Multi-account OAuth rotation for OpenAI Codex with auto model discovery",
+  "name": "oc-codex-multi-account",
+  "version": "1.0.0",
+  "description": "Codex multi-account plugin with sticky threshold switching",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "bin": {
-    "opencode-multi-auth": "./dist/cli.js"
+    "oc-codex-multi-account": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
+    "prepublishOnly": "bun run clean && bun run build",
     "web": "node ./dist/cli.js web --port 3434 --host 127.0.0.1"
   },
   "dependencies": {
@@ -26,12 +30,17 @@
     "typescript": "^5.7.2"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/guard22/opencode-multi-auth-codex"
+    "url": "git+https://github.com/gaboe/oc-codex-multi-account.git"
   },
+  "bugs": {
+    "url": "https://github.com/gaboe/oc-codex-multi-account/issues"
+  },
+  "homepage": "https://github.com/gaboe/oc-codex-multi-account#readme",
   "keywords": [
     "opencode",
     "openai",
@@ -39,6 +48,6 @@
     "oauth",
     "multi-account"
   ],
-  "author": "a3fckx",
+  "author": "gaboe",
   "license": "MIT"
 }

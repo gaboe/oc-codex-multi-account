@@ -16,6 +16,47 @@ function shuffled<T>(input: T[]): T[] {
   return a
 }
 
+function utilizationFromWindow(window?: { limit?: number; remaining?: number }): number {
+  if (!window) return 0
+  if (typeof window.limit !== 'number' || typeof window.remaining !== 'number') return 0
+  if (!Number.isFinite(window.limit) || !Number.isFinite(window.remaining) || window.limit <= 0) {
+    return 0
+  }
+  return Math.min(1, Math.max(0, (window.limit - window.remaining) / window.limit))
+}
+
+function isOverThreshold(
+  account: AccountCredentials | undefined,
+  thresholds: { fiveHour: number; weekly: number }
+): boolean {
+  if (!account) return false
+  const fiveHour = utilizationFromWindow(account.rateLimits?.fiveHour)
+  const weekly = utilizationFromWindow(account.rateLimits?.weekly)
+  return fiveHour > thresholds.fiveHour || weekly > thresholds.weekly
+}
+
+function utilizationScore(
+  account: AccountCredentials | undefined,
+  thresholds: { fiveHour: number; weekly: number }
+): number {
+  if (!account) return 0
+  const fiveHour = utilizationFromWindow(account.rateLimits?.fiveHour)
+  const weekly = utilizationFromWindow(account.rateLimits?.weekly)
+  return Math.max(
+    fiveHour / Math.max(0.01, thresholds.fiveHour),
+    weekly / Math.max(0.01, thresholds.weekly)
+  )
+}
+
+function earliestResetAt(account: AccountCredentials | undefined): number | null {
+  if (!account?.rateLimits) return null
+  const resets = [account.rateLimits.fiveHour?.resetAt, account.rateLimits.weekly?.resetAt].filter(
+    (value): value is number => typeof value === 'number'
+  )
+  if (resets.length === 0) return null
+  return Math.min(...resets)
+}
+
 export async function getNextAccount(
   config: typeof DEFAULT_CONFIG
 ): Promise<RotationResult | null> {
@@ -58,8 +99,87 @@ export async function getNextAccount(
     return 60_000
   })()
 
-  const buildCandidates = (): { aliases: string[]; nextIndex?: (selected: string) => number } => {
+  const buildCandidates = (): {
+    aliases: string[]
+    nextIndex?: (selected: string) => number
+    selectedByPolicy?: string
+    selectedPrimary?: boolean
+  } => {
     switch (config.rotationStrategy) {
+      case 'sticky-threshold': {
+        const allAliases = aliases
+        const primaryAlias = allAliases[0]
+        const thresholds = {
+          fiveHour: config.stickyThresholdFiveHour,
+          weekly: config.stickyThresholdWeekly
+        }
+
+        const activeAlias =
+          store.activeAlias && availableAliases.includes(store.activeAlias)
+            ? store.activeAlias
+            : null
+        const primaryAvailable = Boolean(primaryAlias && availableAliases.includes(primaryAlias))
+
+        const pickFallback = (): string | null => {
+          const fallbacks = availableAliases.filter(alias => alias !== primaryAlias)
+          if (fallbacks.length === 0) return null
+
+          const underThreshold = fallbacks.find(alias => {
+            const acc = store.accounts[alias]
+            return !isOverThreshold(acc, thresholds)
+          })
+          if (underThreshold) return underThreshold
+
+          return [...fallbacks].sort((a, b) => {
+            const scoreA = utilizationScore(store.accounts[a], thresholds)
+            const scoreB = utilizationScore(store.accounts[b], thresholds)
+            if (scoreA !== scoreB) return scoreA - scoreB
+            return a.localeCompare(b)
+          })[0]
+        }
+
+        let selected: string
+        let selectedPrimary = false
+
+        if (!activeAlias) {
+          selected = primaryAvailable ? primaryAlias! : availableAliases[0]
+          selectedPrimary = selected === primaryAlias
+        } else if (activeAlias === primaryAlias) {
+          const primaryUsage = store.accounts[primaryAlias]
+          if (primaryAvailable && isOverThreshold(primaryUsage, thresholds)) {
+            selected = pickFallback() || activeAlias
+            selectedPrimary = selected === primaryAlias
+          } else {
+            selected = activeAlias
+            selectedPrimary = true
+          }
+        } else {
+          selected = activeAlias
+          selectedPrimary = false
+          if (primaryAvailable && primaryAlias) {
+            const recoveryInterval = Math.max(1_000, config.stickyRecoveryCheckIntervalMs)
+            const lastCheck = store.lastPrimaryCheck || 0
+            const resetAt = earliestResetAt(store.accounts[primaryAlias])
+            const resetPassed = Boolean(resetAt && resetAt <= now && resetAt > lastCheck)
+            const intervalPassed = now - lastCheck >= recoveryInterval
+
+            if (resetPassed || intervalPassed) {
+              store.lastPrimaryCheck = now
+              if (!isOverThreshold(store.accounts[primaryAlias], thresholds)) {
+                selected = primaryAlias
+                selectedPrimary = true
+              }
+            }
+          }
+        }
+
+        const rest = availableAliases.filter(alias => alias !== selected)
+        return {
+          aliases: [selected, ...rest],
+          selectedByPolicy: selected,
+          selectedPrimary
+        }
+      }
       case 'least-used': {
         const sorted = [...availableAliases].sort((a, b) => {
           const aa = store.accounts[a]
@@ -91,7 +211,7 @@ export async function getNextAccount(
     }
   }
 
-  const { aliases: candidates, nextIndex } = buildCandidates()
+  const { aliases: candidates, nextIndex, selectedByPolicy, selectedPrimary } = buildCandidates()
 
   for (const candidate of candidates) {
     const token = await ensureValidToken(candidate)
@@ -114,6 +234,14 @@ export async function getNextAccount(
 
     store.activeAlias = candidate
     store.lastRotation = now
+    if (config.rotationStrategy === 'sticky-threshold') {
+      if (!selectedPrimary) {
+        store.lastPrimaryCheck = now
+      }
+      if (selectedByPolicy && selectedByPolicy !== candidate) {
+        store.lastPrimaryCheck = now
+      }
+    }
     if (nextIndex) {
       store.rotationIndex = nextIndex(candidate)
     }

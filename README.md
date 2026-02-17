@@ -1,6 +1,8 @@
-# opencode-multi-auth-codex
+# oc-codex-multi-account
 
-Multi-account OAuth rotation for OpenAI Codex. Auto-rotates between your ChatGPT Plus/Pro accounts.
+[![npm version](https://img.shields.io/npm/v/oc-codex-multi-account)](https://www.npmjs.com/package/oc-codex-multi-account)
+
+Multi-account OAuth rotation for OpenAI Codex with sticky threshold switching.
 
 > **Based on [opencode-openai-codex-auth](https://github.com/numman-ali/opencode-openai-codex-auth) by [@nummanali](https://x.com/nummanali)**. Forked and modified to add multi-account rotation support.
 
@@ -8,17 +10,17 @@ Multi-account OAuth rotation for OpenAI Codex. Auto-rotates between your ChatGPT
 
 This fork patches the plugin to talk to **ChatGPT Codex backend** (`chatgpt.com/backend-api`) with the same headers and request shape as the official Codex OAuth plugin.
 
-**Install from GitHub (recommended for this fork):**
+**Install from npm (recommended):**
 
 ```bash
-bun add github:guard22/opencode-multi-auth-codex --cwd ~/.config/opencode
+bun add oc-codex-multi-account --cwd ~/.config/opencode
 ```
 
 Then set the plugin entry in `~/.config/opencode/opencode.json`:
 
 ```json
 {
-  "plugin": ["github:guard22/opencode-multi-auth-codex"]
+  "plugin": ["oc-codex-multi-account@latest"]
 }
 ```
 
@@ -26,13 +28,13 @@ If you already installed an older build, re-run the GitHub install command above
 
 ## Installation
 
-### Via GitHub (Recommended)
+### Via npm (Recommended)
 
 Add to your `~/.config/opencode/opencode.json`:
 
 ```json
 {
-  "plugin": ["github:guard22/opencode-multi-auth-codex"]
+  "plugin": ["oc-codex-multi-account@latest"]
 }
 ```
 
@@ -43,14 +45,14 @@ OpenCode will auto-install on first run.
 If auto-install fails, install manually:
 
 ```bash
-bun add github:guard22/opencode-multi-auth-codex --cwd ~/.config/opencode
+bun add oc-codex-multi-account --cwd ~/.config/opencode
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/guard22/opencode-multi-auth-codex.git
-cd opencode-multi-auth-codex
+git clone https://github.com/gaboe/oc-codex-multi-account.git
+cd oc-codex-multi-account
 bun install
 bun run build
 bun link
@@ -165,7 +167,7 @@ Add to your `~/.config/opencode/opencode.json`:
 
 ```json
 {
-  "plugin": ["github:guard22/opencode-multi-auth-codex"]
+  "plugin": ["oc-codex-multi-account@latest"]
 }
 ```
 
@@ -175,7 +177,7 @@ Or with other plugins:
 {
   "plugin": [
     "oh-my-opencode",
-    "github:guard22/opencode-multi-auth-codex"
+    "oc-codex-multi-account@latest"
   ]
 }
 ```
@@ -248,7 +250,7 @@ If OpenCode fails to boot with:
 
 ```
 BunInstallFailedError
-{ "pkg": "github:guard22/opencode-multi-auth-codex", "version": "latest" }
+{ "pkg": "oc-codex-multi-account", "version": "latest" }
 ```
 
 It usually means an older `@a3fckx/opencode-multi-auth` dependency is still present.
@@ -268,7 +270,7 @@ Fix:
 2) Reinstall:
 
 ```bash
-bun add github:guard22/opencode-multi-auth-codex --cwd ~/.config/opencode
+bun add oc-codex-multi-account --cwd ~/.config/opencode
 ```
 
 Optional fallback: use a file path plugin entry if installs are blocked:
@@ -276,7 +278,7 @@ Optional fallback: use a file path plugin entry if installs are blocked:
 ```json
 {
   "plugin": [
-    "file:///Users/<you>/.config/opencode/node_modules/@guard22/opencode-multi-auth-codex/dist/index.js"
+    "file:///Users/<you>/.config/opencode/node_modules/oc-codex-multi-account/dist/index.js"
   ]
 }
 ```

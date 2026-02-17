@@ -173,7 +173,7 @@ async function convertSseToJson(response, headers) {
  *
  * Rotates between multiple ChatGPT Plus/Pro accounts for rate limit resilience.
  */
-const MultiAuthPlugin = async ({ client, $, serverUrl, project, directory }) => {
+const MultiAuthPlugin = async ({ client, $, project, directory }) => {
     const terminalNotifierPath = (() => {
         const candidates = [
             '/opt/homebrew/bin/terminal-notifier',
@@ -254,7 +254,7 @@ const MultiAuthPlugin = async ({ client, $, serverUrl, project, directory }) => 
     const ntfyToken = (process.env.OPENCODE_MULTI_AUTH_NOTIFY_NTFY_TOKEN || '').trim();
     const notifyUiBaseUrl = (process.env.OPENCODE_MULTI_AUTH_NOTIFY_UI_BASE_URL || '').trim();
     const getSessionUrl = (sessionID) => {
-        const base = (notifyUiBaseUrl || serverUrl?.origin || '').replace(/\/$/, '');
+        const base = (notifyUiBaseUrl || '').replace(/\/$/, '');
         if (!base)
             return '';
         return `${base}/session/${sessionID}`;

@@ -4,8 +4,9 @@ import * as os from 'os';
 import * as crypto from 'node:crypto';
 const STORE_DIR_ENV = 'OPENCODE_MULTI_AUTH_STORE_DIR';
 const STORE_FILE_ENV = 'OPENCODE_MULTI_AUTH_STORE_FILE';
-const DEFAULT_STORE_DIR = path.join(os.homedir(), '.config', 'opencode-multi-auth');
+const DEFAULT_STORE_DIR = path.join(os.homedir(), '.config', 'oc-codex-multi-account');
 const DEFAULT_STORE_FILE = 'accounts.json';
+const LEGACY_STORE_FILE = path.join(os.homedir(), '.config', 'opencode-multi-auth', 'accounts.json');
 function getStoreDir() {
     const override = process.env[STORE_DIR_ENV];
     if (override && override.trim())
@@ -27,6 +28,21 @@ function ensureDir() {
     const dir = getStoreDir();
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    }
+}
+function migrateLegacyStoreIfNeeded() {
+    const target = getStoreFile();
+    if (fs.existsSync(target))
+        return;
+    if (!fs.existsSync(LEGACY_STORE_FILE))
+        return;
+    try {
+        fs.copyFileSync(LEGACY_STORE_FILE, target);
+        fs.chmodSync(target, 0o600);
+        console.log(`[multi-auth] Migrated credentials store to ${target}`);
+    }
+    catch (err) {
+        console.error('[multi-auth] Failed to migrate legacy credentials store:', err);
     }
 }
 function emptyStore() {
@@ -116,6 +132,7 @@ export function loadStore() {
     lastStoreError = null;
     lastStoreEncrypted = false;
     ensureDir();
+    migrateLegacyStoreIfNeeded();
     const file = getStoreFile();
     if (fs.existsSync(file)) {
         try {

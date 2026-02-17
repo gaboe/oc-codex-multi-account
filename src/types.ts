@@ -69,6 +69,7 @@ export interface AccountStore {
   activeAlias: string | null
   rotationIndex: number
   lastRotation: number
+  lastPrimaryCheck?: number
 }
 
 // OpenAI model info
@@ -81,11 +82,14 @@ export interface OpenAIModel {
 
 // Plugin config
 export interface PluginConfig {
-  rotationStrategy: 'round-robin' | 'least-used' | 'random'
+  rotationStrategy: 'sticky-threshold' | 'round-robin' | 'least-used' | 'random'
   autoRefreshTokens: boolean
   rateLimitCooldownMs: number // How long to skip rate-limited accounts
   modelUnsupportedCooldownMs: number // How long to skip accounts that don't support the requested model
   workspaceDeactivatedCooldownMs: number // How long to skip accounts with deactivated workspaces
+  stickyThresholdFiveHour: number
+  stickyThresholdWeekly: number
+  stickyRecoveryCheckIntervalMs: number
   modelFilter: RegExp // Which models to expose
 }
 
@@ -110,10 +114,13 @@ export interface ProviderModel {
 }
 
 export const DEFAULT_CONFIG: PluginConfig = {
-  rotationStrategy: 'round-robin',
+  rotationStrategy: 'sticky-threshold',
   autoRefreshTokens: true,
   rateLimitCooldownMs: 5 * 60 * 1000, // 5 minutes
   modelUnsupportedCooldownMs: 30 * 60 * 1000, // 30 minutes
   workspaceDeactivatedCooldownMs: 30 * 60 * 1000, // 30 minutes
+  stickyThresholdFiveHour: 0.7,
+  stickyThresholdWeekly: 0.7,
+  stickyRecoveryCheckIntervalMs: 60 * 60 * 1000,
   modelFilter: /^gpt-5/
 }
