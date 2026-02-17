@@ -18,7 +18,11 @@
     "web": "node ./dist/cli.js web --port 3434 --host 127.0.0.1"
   },
   "dependencies": {
-    "@openauthjs/openauth": "^0.4.3"
+    "@effect/cli": "0.67.1",
+    "@effect/platform": "0.88.1",
+    "@effect/platform-node": "0.88.1",
+    "@openauthjs/openauth": "^0.4.3",
+    "effect": "3.19.18"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": "^1.0.150"
