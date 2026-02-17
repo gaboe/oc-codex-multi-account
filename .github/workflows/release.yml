@@ -39,6 +39,11 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Align package version with tag
+        run: |
+          VERSION="${{ steps.tag.outputs.tag }}"
+          npm version "${VERSION#v}" --no-git-tag-version
+
       - name: Build
         run: bun run build
 
