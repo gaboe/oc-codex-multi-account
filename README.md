@@ -74,10 +74,19 @@ oc-codex-multi-account add <alias>       # OAuth login flow
 oc-codex-multi-account remove <alias>    # remove account
 oc-codex-multi-account list              # list accounts
 oc-codex-multi-account status            # detailed status
+oc-codex-multi-account config            # show current strategy/thresholds
+oc-codex-multi-account config --threshold 0.8
+oc-codex-multi-account config --thresholds 0.75,0.85
+oc-codex-multi-account config --threshold-5h 0.8 --threshold-weekly 0.9
+oc-codex-multi-account config --interval 30
+oc-codex-multi-account config --strategy sticky-threshold
+oc-codex-multi-account config --reset
 oc-codex-multi-account path              # print store file path
 oc-codex-multi-account web --port 3434 --host 127.0.0.1
 oc-codex-multi-account service install --port 3434 --host 127.0.0.1
 ```
+
+`--interval` is in minutes. Threshold values accept either 0-1 or percentages (for example `0.8` or `80`).
 
 ## Release Flow
 

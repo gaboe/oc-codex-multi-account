@@ -61,6 +61,10 @@ export async function getNextAccount(
   config: typeof DEFAULT_CONFIG
 ): Promise<RotationResult | null> {
   let store = loadStore()
+  const runtimeConfig = {
+    ...config,
+    ...(store.config || {})
+  }
   const aliases = Object.keys(store.accounts)
 
   if (aliases.length === 0) {
@@ -105,13 +109,13 @@ export async function getNextAccount(
     selectedByPolicy?: string
     selectedPrimary?: boolean
   } => {
-    switch (config.rotationStrategy) {
+    switch (runtimeConfig.rotationStrategy) {
       case 'sticky-threshold': {
         const allAliases = aliases
         const primaryAlias = allAliases[0]
         const thresholds = {
-          fiveHour: config.stickyThresholdFiveHour,
-          weekly: config.stickyThresholdWeekly
+          fiveHour: runtimeConfig.stickyThresholdFiveHour,
+          weekly: runtimeConfig.stickyThresholdWeekly
         }
 
         const activeAlias =
@@ -157,7 +161,7 @@ export async function getNextAccount(
           selected = activeAlias
           selectedPrimary = false
           if (primaryAvailable && primaryAlias) {
-            const recoveryInterval = Math.max(1_000, config.stickyRecoveryCheckIntervalMs)
+            const recoveryInterval = Math.max(1_000, runtimeConfig.stickyRecoveryCheckIntervalMs)
             const lastCheck = store.lastPrimaryCheck || 0
             const resetAt = earliestResetAt(store.accounts[primaryAlias])
             const resetPassed = Boolean(resetAt && resetAt <= now && resetAt > lastCheck)
@@ -234,7 +238,7 @@ export async function getNextAccount(
 
     store.activeAlias = candidate
     store.lastRotation = now
-    if (config.rotationStrategy === 'sticky-threshold') {
+    if (runtimeConfig.rotationStrategy === 'sticky-threshold') {
       if (!selectedPrimary) {
         store.lastPrimaryCheck = now
       }

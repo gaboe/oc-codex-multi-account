@@ -6,7 +6,8 @@ import type {
   AccountStore,
   AccountCredentials,
   RateLimitHistoryEntry,
-  RateLimitSnapshot
+  RateLimitSnapshot,
+  PluginConfig
 } from './types.js'
 
 const STORE_DIR_ENV = 'OPENCODE_MULTI_AUTH_STORE_DIR'
@@ -380,4 +381,29 @@ export function getStorePath(): string {
 export function getStoreStatus(): { locked: boolean; encrypted: boolean; error: string | null } {
   const diag = getStoreDiagnostics()
   return { locked: diag.locked, encrypted: diag.encrypted, error: diag.error }
+}
+
+export function getStoreConfig(): AccountStore['config'] {
+  const store = loadStore()
+  return store.config
+}
+
+export function updateStoreConfig(
+  updates: Partial<Pick<PluginConfig, 'rotationStrategy' | 'stickyThresholdFiveHour' | 'stickyThresholdWeekly' | 'stickyRecoveryCheckIntervalMs'>>
+): AccountStore {
+  const store = loadStore()
+  const current = store.config || {}
+  store.config = {
+    ...current,
+    ...updates
+  }
+  saveStore(store)
+  return store
+}
+
+export function resetStoreConfig(): AccountStore {
+  const store = loadStore()
+  delete store.config
+  saveStore(store)
+  return store
 }

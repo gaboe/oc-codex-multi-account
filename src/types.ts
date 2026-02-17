@@ -70,6 +70,12 @@ export interface AccountStore {
   rotationIndex: number
   lastRotation: number
   lastPrimaryCheck?: number
+  config?: {
+    rotationStrategy?: PluginConfig['rotationStrategy']
+    stickyThresholdFiveHour?: number
+    stickyThresholdWeekly?: number
+    stickyRecoveryCheckIntervalMs?: number
+  }
 }
 
 // OpenAI model info

@@ -1,4 +1,4 @@
-import type { AccountStore, AccountCredentials } from './types.js';
+import type { AccountStore, AccountCredentials, PluginConfig } from './types.js';
 export declare function loadStore(): AccountStore;
 export declare function saveStore(store: AccountStore): void;
 export declare function getStoreDiagnostics(): {
@@ -20,4 +20,7 @@ export declare function getStoreStatus(): {
     encrypted: boolean;
     error: string | null;
 };
+export declare function getStoreConfig(): AccountStore['config'];
+export declare function updateStoreConfig(updates: Partial<Pick<PluginConfig, 'rotationStrategy' | 'stickyThresholdFiveHour' | 'stickyThresholdWeekly' | 'stickyRecoveryCheckIntervalMs'>>): AccountStore;
+export declare function resetStoreConfig(): AccountStore;
 //# sourceMappingURL=store.d.ts.map

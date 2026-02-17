@@ -336,4 +336,24 @@ export function getStoreStatus() {
     const diag = getStoreDiagnostics();
     return { locked: diag.locked, encrypted: diag.encrypted, error: diag.error };
 }
+export function getStoreConfig() {
+    const store = loadStore();
+    return store.config;
+}
+export function updateStoreConfig(updates) {
+    const store = loadStore();
+    const current = store.config || {};
+    store.config = {
+        ...current,
+        ...updates
+    };
+    saveStore(store);
+    return store;
+}
+export function resetStoreConfig() {
+    const store = loadStore();
+    delete store.config;
+    saveStore(store);
+    return store;
+}
 //# sourceMappingURL=store.js.map
