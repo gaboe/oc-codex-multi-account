@@ -3,8 +3,6 @@ import { randomBytes } from 'node:crypto'
 import * as http from 'http'
 import * as url from 'url'
 import * as fs from 'node:fs'
-import * as path from 'node:path'
-import * as os from 'node:os'
 import { addAccount, updateAccount, loadStore } from './store.js'
 import { clearAuthInvalid } from './rotation.js'
 import {
@@ -23,9 +21,6 @@ const CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann'
 const REDIRECT_PORT = 1455
 const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}/auth/callback`
 const SCOPES = ['openid', 'profile', 'email', 'offline_access']
-
-const FLOW_FILE_DIR = path.join(os.homedir(), '.config', 'opencode-multi-auth')
-const FLOW_FILE = path.join(FLOW_FILE_DIR, 'pending-flow.json')
 
 interface TokenResponse {
   access_token: string

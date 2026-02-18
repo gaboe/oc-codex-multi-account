@@ -40,13 +40,13 @@ If Node/Bun are missing, install them first.
 Install this repo into OpenCode's config directory:
 
 ```bash
-bun add github:guard22/opencode-multi-auth-codex#v1.0.9 --cwd ~/.config/opencode
+bun add oc-codex-multi-account@latest --cwd ~/.config/opencode
 ```
 
 If you prefer tracking `main` (not recommended for beginners):
 
 ```bash
-bun add github:guard22/opencode-multi-auth-codex --cwd ~/.config/opencode
+bun add oc-codex-multi-account@latest --cwd ~/.config/opencode
 ```
 
 ## Optional Plugins (Same Stack)
@@ -87,7 +87,7 @@ Important:
     "oh-my-opencode@3.1.6",
     "opencode-antigravity-auth@1.4.5",
 
-    "file:///Users/YOUR_USER/.config/opencode/node_modules/@guard22/opencode-multi-auth-codex/dist/index.js"
+    "file:///Users/YOUR_USER/.config/opencode/node_modules/oc-codex-multi-account/dist/index.js"
   ],
 
   "permission": {
@@ -207,9 +207,9 @@ Repeat for each account.
 ### Option B: Plugin CLI
 
 ```bash
-node ~/.config/opencode/node_modules/@guard22/opencode-multi-auth-codex/dist/cli.js add acc1
-node ~/.config/opencode/node_modules/@guard22/opencode-multi-auth-codex/dist/cli.js add acc2
-node ~/.config/opencode/node_modules/@guard22/opencode-multi-auth-codex/dist/cli.js status
+node ~/.config/opencode/node_modules/oc-codex-multi-account/dist/cli.js add acc1
+node ~/.config/opencode/node_modules/oc-codex-multi-account/dist/cli.js add acc2
+node ~/.config/opencode/node_modules/oc-codex-multi-account/dist/cli.js status
 ```
 
 Account store file:
@@ -254,7 +254,7 @@ Expected:
 Start local dashboard:
 
 ```bash
-node ~/.config/opencode/node_modules/@guard22/opencode-multi-auth-codex/dist/cli.js web --host 127.0.0.1 --port 3434
+node ~/.config/opencode/node_modules/oc-codex-multi-account/dist/cli.js web --host 127.0.0.1 --port 3434
 ```
 
 Open:
@@ -298,6 +298,6 @@ Fix:
 
 You should see entries like:
 
-- `... opencode-multi-auth-codex ... loading plugin`
+- `... oc-codex-multi-account ... loading plugin`
 - `... opencode-antigravity-auth ... loading plugin`
 - `... oh-my-opencode ... loading plugin`

@@ -273,20 +273,6 @@ const HTML = `<!doctype html>
         color: var(--muted);
         font-size: 12px;
       }
-      .limit-card .sparkline {
-        margin-top: 6px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .sparkline svg {
-        width: 110px;
-        height: 28px;
-      }
-      .sparkline .trend {
-        font-size: 11px;
-        color: var(--muted);
-      }
       .tag-row {
         display: flex;
         flex-wrap: wrap;
@@ -581,7 +567,7 @@ const HTML = `<!doctype html>
         return Math.round((window.remaining / window.limit) * 100)
       }
 
-      function renderLimit(window, label, history) {
+      function renderLimit(window, label) {
         if (!window) return ''
         const remaining = window.remaining ?? '-'
         const limit = window.limit ?? '-'
@@ -589,73 +575,14 @@ const HTML = `<!doctype html>
         const remainingText = isPercent ? remaining + '%' : remaining + ' / ' + limit
         const reset = window.resetAt ? formatDate(window.resetAt) : 'unknown'
         const updated = window.updatedAt ? formatDate(window.updatedAt) : 'unknown'
-        const spark = renderSparkline(history, label === '5h limit' ? 'fiveHour' : 'weekly')
         return \`
           <div class="limit-card">
             <strong>\${label}</strong>
             <span>Remaining: \${remainingText}</span><br />
             <span>Reset: \${reset}</span><br />
             <span>Updated: \${updated}</span>
-            \${spark}
           </div>
         \`
-      }
-
-      function renderSparkline(history, key) {
-        if (!history || history.length < 2) {
-          return '<div class="sparkline"><span class="trend">No history</span></div>'
-        }
-        const values = history
-          .map((entry) => {
-            const snapshot = entry[key]
-            if (!snapshot || typeof snapshot.remaining !== 'number') return null
-            const limit = typeof snapshot.limit === 'number' && snapshot.limit > 0 ? snapshot.limit : 100
-            return { at: entry.at, value: Math.round((snapshot.remaining / limit) * 100) }
-          })
-          .filter((entry) => entry && typeof entry.value === 'number')
-          .slice(-20)
-
-        if (values.length < 2) {
-          return '<div class="sparkline"><span class="trend">No history</span></div>'
-        }
-
-        const width = 110
-        const height = 28
-        const max = 100
-        const min = 0
-        const step = width / (values.length - 1)
-        const points = values.map((entry, idx) => {
-          const x = idx * step
-          const y = height - ((entry.value - min) / (max - min)) * height
-          return \`\${x.toFixed(1)},\${y.toFixed(1)}\`
-        })
-
-        const trend = renderTrend(values)
-        return \`
-          <div class="sparkline">
-            <svg viewBox="0 0 \${width} \${height}" preserveAspectRatio="none">
-              <polyline
-                fill="none"
-                stroke="\${key === 'fiveHour' ? 'var(--accent-2)' : 'var(--accent)'}"
-                stroke-width="2"
-                points="\${points.join(' ')}"
-              />
-            </svg>
-            <span class="trend">\${trend}</span>
-          </div>
-        \`
-      }
-
-      function renderTrend(values) {
-        if (values.length < 2) return 'n/a'
-        const last = values[values.length - 1]
-        const prev = values[values.length - 2]
-        const hours = (last.at - prev.at) / 3600000
-        if (!hours || hours === 0) return 'n/a'
-        const delta = last.value - prev.value
-        const rate = delta / hours
-        const sign = rate > 0 ? '+' : ''
-        return \`Trend: \${sign}\${rate.toFixed(1)}%/h\`
       }
 
       function parseTags(value) {
@@ -750,8 +677,8 @@ const HTML = `<!doctype html>
           const tags = (acc.tags || []).map((tag) => \`<span class="tag-chip">\${escapeHtml(tag)}</span>\`).join('')
           const notes = acc.notes ? escapeHtml(acc.notes) : 'No notes yet.'
           const limitBlocks = [
-            renderLimit(acc.rateLimits?.fiveHour, '5h limit', acc.rateLimitHistory),
-            renderLimit(acc.rateLimits?.weekly, 'Weekly limit', acc.rateLimitHistory)
+            renderLimit(acc.rateLimits?.fiveHour, '5h limit'),
+            renderLimit(acc.rateLimits?.weekly, 'Weekly limit')
           ].join('')
 
           return \`

@@ -11,8 +11,12 @@ import type {
 const STORE_DIR_ENV = 'OPENCODE_MULTI_AUTH_STORE_DIR'
 const STORE_FILE_ENV = 'OPENCODE_MULTI_AUTH_STORE_FILE'
 const DEFAULT_STORE_DIR = path.join(os.homedir(), '.config', 'opencode')
-const DEFAULT_STORE_FILE = 'codex-multi-accounts.json'
-const LEGACY_STORE_FILE = path.join(os.homedir(), '.config', 'oc-codex-multi-account', 'accounts.json')
+const DEFAULT_STORE_FILE = 'codex-multi-account-accounts.json'
+const LEGACY_STORE_FILES = [
+  path.join(os.homedir(), '.config', 'opencode', 'codex-multi-accounts.json'),
+  path.join(os.homedir(), '.config', 'oc-codex-multi-account', 'accounts.json'),
+  path.join(os.homedir(), '.config', 'opencode-multi-auth', 'accounts.json')
+]
 
 function getStoreDir(): string {
   const override = process.env[STORE_DIR_ENV]
@@ -52,14 +56,18 @@ function ensureDir(): void {
 function migrateLegacyStoreIfNeeded(): void {
   const target = getStoreFile()
   if (fs.existsSync(target)) return
-  if (!fs.existsSync(LEGACY_STORE_FILE)) return
+  for (const legacyPath of LEGACY_STORE_FILES) {
+    if (!fs.existsSync(legacyPath)) continue
 
-  try {
-    fs.copyFileSync(LEGACY_STORE_FILE, target)
-    fs.chmodSync(target, 0o600)
-    console.log(`[multi-auth] Migrated credentials store to ${target}`)
-  } catch (err) {
-    console.error('[multi-auth] Failed to migrate legacy credentials store:', err)
+    try {
+      fs.copyFileSync(legacyPath, target)
+      fs.chmodSync(target, 0o600)
+      console.log(`[multi-auth] Migrated credentials store to ${target}`)
+      return
+    } catch (err) {
+      console.error('[multi-auth] Failed to migrate legacy credentials store:', err)
+      return
+    }
   }
 }
 

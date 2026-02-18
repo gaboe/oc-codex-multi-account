@@ -22,7 +22,6 @@ export interface AccountCredentials {
     authInvalid?: boolean;
     authInvalidatedAt?: number;
     rateLimits?: AccountRateLimits;
-    rateLimitHistory?: RateLimitHistoryEntry[];
     limitStatus?: LimitStatus;
     limitError?: string;
     lastLimitProbeAt?: number;
@@ -40,16 +39,6 @@ export interface RateLimitWindow {
 export interface AccountRateLimits {
     fiveHour?: RateLimitWindow;
     weekly?: RateLimitWindow;
-}
-export interface RateLimitSnapshot {
-    remaining?: number;
-    limit?: number;
-    resetAt?: number;
-}
-export interface RateLimitHistoryEntry {
-    at: number;
-    fiveHour?: RateLimitSnapshot;
-    weekly?: RateLimitSnapshot;
 }
 export type LimitStatus = 'idle' | 'queued' | 'running' | 'success' | 'error' | 'stopped';
 export interface AccountStore {
