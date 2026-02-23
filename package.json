@@ -1,6 +1,6 @@
 {
   "name": "oc-codex-multi-account",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Codex multi-account plugin with sticky threshold switching",
   "type": "module",
   "main": "./dist/index.js",
