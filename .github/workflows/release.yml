@@ -42,7 +42,7 @@ jobs:
       - name: Align package version with tag
         run: |
           VERSION="${{ steps.tag.outputs.tag }}"
-          npm version "${VERSION#v}" --no-git-tag-version
+          npm version "${VERSION#v}" --no-git-tag-version --allow-same-version
 
       - name: Build
         run: bun run build
