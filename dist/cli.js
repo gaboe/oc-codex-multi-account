@@ -118,6 +118,41 @@ const statusCommand = Command.make("status", {}, () => Effect.sync(() => {
         console.log();
     }
 })).pipe(Command.withDescription("Show detailed account status"));
+const pingCommand = Command.make("ping", { alias: aliasArg }, ({ alias }) => Effect.tryPromise({
+    try: async () => {
+        try {
+            const store = loadStore();
+            const account = store.accounts[alias];
+            if (!account) {
+                console.log(JSON.stringify({ status: "error", alias, error: "Account not found" }));
+                return;
+            }
+            if (!account.accessToken) {
+                console.log(JSON.stringify({ status: "error", alias, error: "Missing access token" }));
+                return;
+            }
+            if (account.expiresAt < Date.now()) {
+                console.log(JSON.stringify({ status: "error", alias, error: "Token expired" }));
+                return;
+            }
+            const res = await fetch("https://api.openai.com/v1/models", {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${account.accessToken}`,
+                },
+            });
+            if (res.ok) {
+                console.log(JSON.stringify({ status: "ok", alias }));
+                return;
+            }
+            console.log(JSON.stringify({ status: "error", alias, error: `HTTP ${res.status}` }));
+        }
+        catch (err) {
+            console.log(JSON.stringify({ status: "error", alias, error: String(err) }));
+        }
+    },
+    catch: (err) => new Error(`Ping command failed: ${err instanceof Error ? err.message : String(err)}`),
+})).pipe(Command.withDescription("Check account token against OpenAI API"));
 const pathCommand = Command.make("path", {}, () => Effect.sync(() => {
     console.log(getStorePath());
 })).pipe(Command.withDescription("Show config file location"));
@@ -222,6 +257,7 @@ const rootCommand = Command.make("opencode-multi-auth", {}).pipe(Command.withDes
     listCommand,
     lsCommand,
     statusCommand,
+    pingCommand,
     pathCommand,
     webCommand,
     serviceCommand,
