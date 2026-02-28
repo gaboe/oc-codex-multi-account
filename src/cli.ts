@@ -212,12 +212,22 @@ const pingCommand = Command.make("ping", { alias: aliasArg }, ({ alias }) =>
           return;
         }
 
-        const res = await fetch("https://api.openai.com/v1/models", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
+        // Use /v1/responses (Codex OAuth tokens lack /v1/models permission)
+        const res = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-5.3-codex",
+            input: "reply with ok",
+            max_output_tokens: 1,
+          }),
         });
 
-        if (res.ok) {
+        // 200 = ok, 429 = rate limited but token works
+        if (res.ok || res.status === 429) {
           console.log(JSON.stringify({ status: "ok", alias }));
           return;
         }
