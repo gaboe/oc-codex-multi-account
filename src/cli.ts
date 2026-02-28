@@ -6,7 +6,7 @@ import { Console, Effect, Option } from "effect";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loginAccount } from "./auth.js";
+import { loginAccount, ensureValidToken, createAuthorizationFlow, exchangeCodeForTokens } from "./auth.js";
 import {
   getStoreConfig,
   getStorePath,
@@ -199,18 +199,22 @@ const pingCommand = Command.make("ping", { alias: aliasArg }, ({ alias }) =>
           return;
         }
 
-        if (account.expiresAt < Date.now()) {
+        // Auto-refresh expired/expiring tokens before pinging
+        const token = await ensureValidToken(alias);
+        if (!token) {
           console.log(
-            JSON.stringify({ status: "error", alias, error: "Token expired" })
+            JSON.stringify({
+              status: "error",
+              alias,
+              error: "Token expired and refresh failed — reauth required",
+            })
           );
           return;
         }
 
         const res = await fetch("https://api.openai.com/v1/models", {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${account.accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (res.ok) {
@@ -233,6 +237,72 @@ const pingCommand = Command.make("ping", { alias: aliasArg }, ({ alias }) =>
       ),
   })
 ).pipe(Command.withDescription("Check account token against OpenAI API"));
+
+const reauthCommand = Command.make(
+  "reauth",
+  {
+    alias: aliasArg,
+    callback: Options.text("callback").pipe(Options.optional),
+    verifier: Options.text("verifier").pipe(Options.optional),
+  },
+  ({ alias, callback, verifier }) =>
+    Effect.tryPromise({
+      try: async () => {
+        try {
+          const store = loadStore();
+          const account = store.accounts[alias];
+
+          if (!account) {
+            console.log(
+              JSON.stringify({ status: "error", alias, error: "Account not found" })
+            );
+            return;
+          }
+
+          // Step 1: Generate auth URL + verifier
+          if (!Option.isSome(callback)) {
+            const flow = await createAuthorizationFlow();
+            console.log(
+              JSON.stringify({ url: flow.url, verifier: flow.pkce.verifier })
+            );
+            return;
+          }
+
+          // Step 2: Exchange callback code for tokens
+          if (!Option.isSome(verifier)) {
+            console.log(
+              JSON.stringify({ status: "error", alias, error: "Missing --verifier" })
+            );
+            return;
+          }
+
+          // Extract code from callback URL or use as-is
+          let code: string;
+          try {
+            const parsed = new URL(callback.value);
+            code = parsed.searchParams.get("code") || callback.value;
+          } catch {
+            code = callback.value;
+          }
+
+          await exchangeCodeForTokens(alias, code, verifier.value);
+          console.log(JSON.stringify({ status: "ok", alias }));
+        } catch (err) {
+          console.log(
+            JSON.stringify({
+              status: "error",
+              alias,
+              error: err instanceof Error ? err.message : String(err),
+            })
+          );
+        }
+      },
+      catch: (err) =>
+        new Error(
+          `Reauth failed: ${err instanceof Error ? err.message : String(err)}`
+        ),
+    })
+).pipe(Command.withDescription("Re-authenticate an existing account (JSON output)"));
 
 const pathCommand = Command.make("path", {}, () =>
   Effect.sync(() => {
@@ -379,6 +449,7 @@ const rootCommand = Command.make("opencode-multi-auth", {}).pipe(
     lsCommand,
     statusCommand,
     pingCommand,
+    reauthCommand,
     pathCommand,
     webCommand,
     serviceCommand,

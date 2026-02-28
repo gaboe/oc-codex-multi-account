@@ -283,3 +283,74 @@ export async function ensureValidToken(alias: string): Promise<string | null> {
 
   return account.accessToken
 }
+
+/**
+ * Exchange an authorization code for tokens and update the account store.
+ * Used by the 2-step reauth flow (step 2).
+ */
+export async function exchangeCodeForTokens(
+  alias: string,
+  code: string,
+  verifier: string
+): Promise<AccountCredentials> {
+  const tokenRes = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: CLIENT_ID,
+      code,
+      code_verifier: verifier,
+      redirect_uri: REDIRECT_URI
+    })
+  })
+
+  if (!tokenRes.ok) {
+    const text = await tokenRes.text()
+    throw new Error(`Token exchange failed (${tokenRes.status}): ${text.slice(0, 200)}`)
+  }
+
+  const tokens = (await tokenRes.json()) as TokenResponse
+  if (!tokens.refresh_token) {
+    throw new Error('Token exchange did not return a refresh_token')
+  }
+
+  const now = Date.now()
+  const accessClaims = decodeJwtPayload(tokens.access_token)
+  const idClaims = tokens.id_token ? decodeJwtPayload(tokens.id_token) : null
+  const expiresAt = getExpiryFromClaims(accessClaims) || getExpiryFromClaims(idClaims) || now + tokens.expires_in * 1000
+
+  let email: string | undefined = getEmailFromClaims(idClaims) || getEmailFromClaims(accessClaims)
+  try {
+    const userRes = await fetch(`${OPENAI_ISSUER}/userinfo`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` }
+    })
+    if (userRes.ok) {
+      const user = (await userRes.json()) as { email?: string }
+      email = user.email || email
+    }
+  } catch {
+    /* user info fetch is non-critical */
+  }
+
+  const accountId =
+    getAccountIdFromClaims(idClaims) ||
+    getAccountIdFromClaims(accessClaims)
+
+  const store = addAccount(alias, {
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    idToken: tokens.id_token,
+    accountId,
+    expiresAt,
+    email,
+    lastRefresh: new Date(now).toISOString(),
+    lastSeenAt: now,
+    source: 'opencode',
+    authInvalid: false,
+    authInvalidatedAt: undefined
+  })
+
+  clearAuthInvalid(alias)
+  return store.accounts[alias]
+}
