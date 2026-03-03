@@ -131,6 +131,11 @@ export function syncCodexAuthFile() {
         source: 'codex'
     };
     if (alias) {
+        // Skip sync if store already has a fresher token (e.g. from proactive refresh)
+        const existing = store.accounts[alias];
+        if (existing && typeof existing.expiresAt === 'number' && expiresAt <= existing.expiresAt) {
+            return { alias, added: false, updated: false };
+        }
         updateAccount(alias, update);
         setActiveAlias(alias);
         return { alias, added: false, updated: true };
