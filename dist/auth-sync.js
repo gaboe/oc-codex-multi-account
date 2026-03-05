@@ -69,6 +69,11 @@ export async function syncAuthFromOpenCode(getAuth) {
     const derivedEmail = getEmailFromClaims(accessClaims);
     const derivedAccountId = getAccountIdFromClaims(accessClaims);
     if (existingAlias) {
+        // Skip sync if store already has a fresher token
+        const existing = loadStore().accounts[existingAlias];
+        if (existing && typeof existing.expiresAt === 'number' && typeof auth.expires === 'number' && auth.expires <= existing.expiresAt) {
+            return;
+        }
         updateAccount(existingAlias, {
             accessToken: auth.access,
             refreshToken: auth.refresh,
@@ -83,6 +88,11 @@ export async function syncAuthFromOpenCode(getAuth) {
     if (email) {
         const existingByEmail = findAccountAliasByEmail(email, store);
         if (existingByEmail) {
+            // Skip sync if store already has a fresher token
+            const existingAcct = store.accounts[existingByEmail];
+            if (existingAcct && typeof existingAcct.expiresAt === 'number' && typeof auth.expires === 'number' && auth.expires <= existingAcct.expiresAt) {
+                return;
+            }
             updateAccount(existingByEmail, {
                 accessToken: auth.access,
                 refreshToken: auth.refresh,
